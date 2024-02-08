@@ -1,4 +1,4 @@
-name: Build and push to AWS
+name: Build an push to AWS
 
 on:
     push:
@@ -19,4 +19,28 @@ jobs:
               with:
                 dotnet-version: '6.0'
             
- 
+            - name: Restore dependencies
+              run: dotnet restore
+
+            - name: Build project
+              run: dotnet build --no-restore
+
+            - name: Run tests
+              run: dotnet test --no-build --verbosity normal
+
+            - name: Publish project
+              run: dotnet publish -o site;
+
+            - name: create zip package
+              run: cd site; zip ../site.zip *;
+
+            - name: Deploy to AWS EB
+              uses: einaregilsson/beanstalk-deploy@v21
+              with: 
+                aws_access_key: ${{ secrets.ACCESS_KEY }}
+                aws_secret_key: ${{ secrets.SECRET_ACCESS_KEY }}
+                application_name: apiaws    
+                environment_name: Apiaws-env
+                version_label: ${{ github.run_id }}             
+                region: eu-north-1
+                deployment_package: site.zip
